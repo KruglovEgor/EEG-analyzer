@@ -1,0 +1,24 @@
+{
+  "analysisId": "550e8400-e29b-41d4-a716-446655440001",
+  "analysisMode": "GROUP",
+  "files": [
+    {
+      "id": "file-1",
+      "filename": "subject1.csv",
+      "experimentName": "Subject 1 - Alpha",
+      "timeColumn": "Time",
+      "amplitudeColumn": "Amplitude",
+      "rawFile": "VGltZSxBbXBsaXR1ZGUsQ2hhbm5lbAowLjAwMCwxMi40NSxGcDEKMC4wMDQsMTUuMjMsRnAxCjAuMDA4LDE4LjY3LEZwMQowLjAxMiwxNi4zNCxGcDEKMC4wMTYsMTMuMTIsRnAxCjAuMDIwLDEwLjg5LEZwMQowLjAyNCw5LjQ1LEZwMQowLjAyOCwxMS4yMyxGcDEKMC4wMzIsMTQuNTYsRnAxCjAuMDM2LDE3Ljg5LEZwMQowLjA0MCwxOS4yMyxGcDEKMC4wNDQsMTguNDUsRnAxCjAuMDQ4LDE1LjY3LEZwMQowLjA1MiwxMi4zNCxGcDE="
+    },
+    {
+      "id": "file-2",
+      "filename": "subject2.csv",
+      "experimentName": "Subject 2 - Alpha",
+      "timeColumn": "Time",
+      "amplitudeColumn": "Amplitude",
+      "rawFile": "VGltZSxBbXBsaXR1ZGUsQ2hhbm5lbAowLjAwMCw4LjIzLE96CjAuMDA0LDEwLjQ1LE96CjAuMDA4LDEzLjY3LE96CjAuMDEyLDE1Ljg5LE96CjAuMDE2LDE2LjIzLE96CjAuMDIwLDE0LjU2LE96CjAuMDI0LDExLjM0LE96CjAuMDI4LDguNjcsT3oKMC4wMzIsNy4yMyxPegowLjAzNiw4LjQ1LE96CjAuMDQwLDExLjY3LE96CjAuMDQ0LDE0Ljg5LE96CjAuMDQ4LDE2LjQ1LE96CjAuMDUyLDE1Ljc4LE96"
+    }
+  ],
+  "rhythm": "ALPHA",
+  "brainZone": "OCCIPITAL"
+}
