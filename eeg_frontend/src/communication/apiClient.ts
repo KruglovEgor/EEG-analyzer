@@ -288,13 +288,37 @@ export function createApiClient(options: ApiClientOptions) {
     ): Promise<EEGAnalysisResponse> {
         const url = `${baseUrl}${endpoint}`;
 
+        // Build FormData for multipart/form-data request
+        const formData = new FormData();
+        formData.append("analysisId", request.analysisId);
+        formData.append("analysisMode", request.analysisMode);
+        formData.append("brainZone", request.brainZone);
+
+        if (request.analysisMode === 'SINGLE') {
+            // Single file, multiple rhythms
+            formData.append("file", request.file.rawFile);
+            formData.append("experimentName", request.file.experimentName);
+            formData.append("timeColumn", request.file.timeColumn);
+            formData.append("amplitudeColumn", request.file.amplitudeColumn);
+            formData.append("rhythms", request.rhythms.join(","));
+        } else if (request.analysisMode === 'GROUP') {
+            // Multiple files, single rhythm
+            request.files.forEach((file) => {
+                formData.append("files", file.rawFile);
+            });
+            formData.append("experimentNames", request.files.map(f => f.experimentName).join(","));
+            formData.append("timeColumn", request.files[0].timeColumn);
+            formData.append("amplitudeColumn", request.files[0].amplitudeColumn);
+            formData.append("rhythm", request.rhythm);
+        }
+
         const res = await fetchFn(url, {
             method: "POST",
+            // Don't set Content-Type - browser sets it automatically with boundary
             headers: {
-                "Content-Type": "application/json",
                 "Accept": "application/json",
             },
-            body: JSON.stringify(request),
+            body: formData,
             signal: signal ?? options.signal,
         });
 
