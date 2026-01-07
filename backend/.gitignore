@@ -28,11 +28,16 @@ go.work
 
 # OS
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
 Thumbs.db
 
 # Swagger docs (generated)
 docs/
-
-testdata/
-*.md
-*/*.md
