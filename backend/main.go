@@ -18,6 +18,7 @@ import (
 	"eeg-analyzer/handlers"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -32,6 +33,9 @@ func main() {
 	// Create router
 	router := gin.Default()
 
+	// Enable gzip compression
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
+
 	// Configure CORS for frontend
 	config := cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "https://vad1mchk.github.io"},
@@ -45,8 +49,9 @@ func main() {
 	// Health check endpoint
 	router.GET("/health", handlers.HealthCheck)
 
-	// Analysis endpoint
-	router.POST("/analyze", handlers.AnalyzeEEG)
+	// Analysis endpoints
+	router.POST("/analyze", handlers.AnalyzeMultipart) // Multipart/form-data (recommended)
+	router.POST("/analyze-json", handlers.AnalyzeEEG)  // JSON with base64 (legacy/Swagger)
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -32,3 +32,7 @@ Thumbs.db
 
 # Swagger docs (generated)
 docs/
+
+testdata/
+*.md
+*/*.md

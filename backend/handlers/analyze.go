@@ -72,11 +72,11 @@ func handleSingleAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRe
 
 	// Build response
 	response := &models.EEGAnalysisResponse{
-		AnalysisID:   req.AnalysisID,
-		AnalysisMode: models.ModeSingle,
+		AnalysisID:     req.AnalysisID,
+		AnalysisMode:   models.ModeSingle,
 		ExperimentName: &req.File.ExperimentName,
-		Rhythms:      req.Rhythms,
-		DataByRhythm: make(map[models.RhythmType]models.EEGPlotPair),
+		Rhythms:        req.Rhythms,
+		DataByRhythm:   make(map[models.RhythmType]models.EEGPlotPair),
 	}
 
 	// Calculate absolute and relative powers
@@ -143,8 +143,8 @@ func handleGroupAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRes
 		response.DataByExperiment[fileConfig.ExperimentName] = plotPair
 	}
 
-	response.AbsolutePowersGroup = absolutePowers
-	response.RelativePowersGroup = relativePowers
+	response.AbsolutePowers = absolutePowers
+	response.RelativePowers = relativePowers
 
 	return response, nil
 }
