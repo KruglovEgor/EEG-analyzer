@@ -5,7 +5,6 @@
 *.so
 *.dylib
 eeg-analyzer
-eeg-analyzer.exe
 
 # Test binary
 *.test
