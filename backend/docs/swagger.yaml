@@ -1,0 +1,289 @@
+basePath: /
+definitions:
+  handlers.HealthResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+      version:
+        type: string
+    type: object
+  models.AnalysisMode:
+    enum:
+    - SINGLE
+    - GROUP
+    type: string
+    x-enum-varnames:
+    - ModeSingle
+    - ModeGroup
+  models.BrainZone:
+    enum:
+    - FRONTAL
+    - PARIETAL
+    - CENTRAL
+    - TEMPORAL
+    - OCCIPITAL
+    type: string
+    x-enum-varnames:
+    - BrainZoneFrontal
+    - BrainZoneParietal
+    - BrainZoneCentral
+    - BrainZoneTemporal
+    - BrainZoneOccipital
+  models.EEGAnalysisRequest:
+    properties:
+      analysisId:
+        type: string
+      analysisMode:
+        $ref: '#/definitions/models.AnalysisMode'
+      brainZone:
+        $ref: '#/definitions/models.BrainZone'
+      file:
+        allOf:
+        - $ref: '#/definitions/models.EEGFileConfig'
+        description: For SINGLE mode
+      files:
+        description: For GROUP mode
+        items:
+          $ref: '#/definitions/models.EEGFileConfig'
+        type: array
+      rhythm:
+        $ref: '#/definitions/models.RhythmType'
+      rhythms:
+        items:
+          $ref: '#/definitions/models.RhythmType'
+        type: array
+    required:
+    - analysisId
+    - analysisMode
+    type: object
+  models.EEGAnalysisResponse:
+    properties:
+      absolutePowers:
+        description: '[[RhythmType, number]]'
+        items:
+          items: {}
+          type: array
+        type: array
+      analysisId:
+        type: string
+      analysisMode:
+        $ref: '#/definitions/models.AnalysisMode'
+      dataByExperiment:
+        additionalProperties:
+          $ref: '#/definitions/models.EEGPlotPair'
+        type: object
+      dataByRhythm:
+        additionalProperties:
+          $ref: '#/definitions/models.EEGPlotPair'
+        type: object
+      experimentName:
+        description: For SINGLE mode
+        type: string
+      experimentNames:
+        description: For GROUP mode - using same field names, just different data
+        items:
+          type: string
+        type: array
+      relativePowers:
+        description: '[[RhythmType, number]]'
+        items:
+          items: {}
+          type: array
+        type: array
+      rhythm:
+        $ref: '#/definitions/models.RhythmType'
+      rhythms:
+        items:
+          $ref: '#/definitions/models.RhythmType'
+        type: array
+    required:
+    - analysisId
+    - analysisMode
+    type: object
+  models.EEGCombinedDataPoint:
+    additionalProperties:
+      format: float64
+      type: number
+    type: object
+  models.EEGFileConfig:
+    properties:
+      amplitudeColumn:
+        type: string
+      experimentName:
+        type: string
+      filename:
+        type: string
+      id:
+        type: string
+      rawFile:
+        description: Base64 encoded CSV content
+        type: string
+      serverId:
+        description: Can be ignored
+        type: string
+      timeColumn:
+        type: string
+    required:
+    - amplitudeColumn
+    - experimentName
+    - filename
+    - id
+    - timeColumn
+    type: object
+  models.EEGLinePlot:
+    properties:
+      area:
+        type: boolean
+      data:
+        items:
+          $ref: '#/definitions/models.EEGCombinedDataPoint'
+        type: array
+      seriesMetadata:
+        items:
+          $ref: '#/definitions/models.EEGSeriesMetadata'
+        type: array
+      showLegend:
+        type: boolean
+      xAxisName:
+        type: string
+      xHighlightRange:
+        items:
+          type: number
+        type: array
+      xMax:
+        type: number
+      xMin:
+        type: number
+      yAxisName:
+        type: string
+      yLogarithmic:
+        type: boolean
+      yMax:
+        type: number
+      yMin:
+        type: number
+    required:
+    - data
+    type: object
+  models.EEGPlotPair:
+    properties:
+      psdPlot:
+        $ref: '#/definitions/models.EEGLinePlot'
+      signalPlot:
+        $ref: '#/definitions/models.EEGLinePlot'
+    required:
+    - psdPlot
+    - signalPlot
+    type: object
+  models.EEGSeriesMetadata:
+    properties:
+      dataKey:
+        type: string
+      legend:
+        type: string
+      preferredColor:
+        type: string
+    required:
+    - dataKey
+    type: object
+  models.RhythmType:
+    enum:
+    - ALPHA
+    - BETA
+    - GAMMA
+    - DELTA
+    - THETA
+    - KAPPA
+    - LAMBDA
+    - MU
+    type: string
+    x-enum-comments:
+      RhythmAlpha: 8–13 Hz
+      RhythmBeta: 13–30 Hz
+      RhythmDelta: 0.5–4 Hz
+      RhythmGamma: 30–100 Hz
+      RhythmKappa: 8–13 Hz
+      RhythmLambda: 4–8 Hz
+      RhythmMu: 8–13 Hz
+      RhythmTheta: 4–8 Hz
+    x-enum-descriptions:
+    - 8–13 Hz
+    - 13–30 Hz
+    - 30–100 Hz
+    - 0.5–4 Hz
+    - 4–8 Hz
+    - 8–13 Hz
+    - 4–8 Hz
+    - 8–13 Hz
+    x-enum-varnames:
+    - RhythmAlpha
+    - RhythmBeta
+    - RhythmGamma
+    - RhythmDelta
+    - RhythmTheta
+    - RhythmKappa
+    - RhythmLambda
+    - RhythmMu
+host: localhost:3000
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: |-
+    REST API for analyzing EEG (electroencephalography) data
+    Supports single-file and multi-file analysis with various brain rhythm bands
+  license:
+    name: MIT
+  title: EEG Analyzer API
+  version: "1.0"
+paths:
+  /analyze:
+    post:
+      consumes:
+      - application/json
+      description: Performs EEG analysis in SINGLE or GROUP mode
+      parameters:
+      - description: Analysis Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EEGAnalysisRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EEGAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Analyze EEG data
+      tags:
+      - analysis
+  /health:
+    get:
+      description: Returns the health status of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Health check endpoint
+      tags:
+      - health
+swagger: "2.0"

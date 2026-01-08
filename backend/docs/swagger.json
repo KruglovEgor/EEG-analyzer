@@ -1,0 +1,410 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API for analyzing EEG (electroencephalography) data\nSupports single-file and multi-file analysis with various brain rhythm bands",
+        "title": "EEG Analyzer API",
+        "contact": {
+            "name": "API Support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/",
+    "paths": {
+        "/analyze": {
+            "post": {
+                "description": "Performs EEG analysis in SINGLE or GROUP mode",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analysis"
+                ],
+                "summary": "Analyze EEG data",
+                "parameters": [
+                    {
+                        "description": "Analysis Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.EEGAnalysisRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.EEGAnalysisResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns the health status of the API",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AnalysisMode": {
+            "type": "string",
+            "enum": [
+                "SINGLE",
+                "GROUP"
+            ],
+            "x-enum-varnames": [
+                "ModeSingle",
+                "ModeGroup"
+            ]
+        },
+        "models.BrainZone": {
+            "type": "string",
+            "enum": [
+                "FRONTAL",
+                "PARIETAL",
+                "CENTRAL",
+                "TEMPORAL",
+                "OCCIPITAL"
+            ],
+            "x-enum-varnames": [
+                "BrainZoneFrontal",
+                "BrainZoneParietal",
+                "BrainZoneCentral",
+                "BrainZoneTemporal",
+                "BrainZoneOccipital"
+            ]
+        },
+        "models.EEGAnalysisRequest": {
+            "type": "object",
+            "required": [
+                "analysisId",
+                "analysisMode"
+            ],
+            "properties": {
+                "analysisId": {
+                    "type": "string"
+                },
+                "analysisMode": {
+                    "$ref": "#/definitions/models.AnalysisMode"
+                },
+                "brainZone": {
+                    "$ref": "#/definitions/models.BrainZone"
+                },
+                "file": {
+                    "description": "For SINGLE mode",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.EEGFileConfig"
+                        }
+                    ]
+                },
+                "files": {
+                    "description": "For GROUP mode",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.EEGFileConfig"
+                    }
+                },
+                "rhythm": {
+                    "$ref": "#/definitions/models.RhythmType"
+                },
+                "rhythms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RhythmType"
+                    }
+                }
+            }
+        },
+        "models.EEGAnalysisResponse": {
+            "type": "object",
+            "required": [
+                "analysisId",
+                "analysisMode"
+            ],
+            "properties": {
+                "absolutePowers": {
+                    "description": "[[RhythmType, number]]",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "analysisId": {
+                    "type": "string"
+                },
+                "analysisMode": {
+                    "$ref": "#/definitions/models.AnalysisMode"
+                },
+                "dataByExperiment": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.EEGPlotPair"
+                    }
+                },
+                "dataByRhythm": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.EEGPlotPair"
+                    }
+                },
+                "experimentName": {
+                    "description": "For SINGLE mode",
+                    "type": "string"
+                },
+                "experimentNames": {
+                    "description": "For GROUP mode - using same field names, just different data",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "relativePowers": {
+                    "description": "[[RhythmType, number]]",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "rhythm": {
+                    "$ref": "#/definitions/models.RhythmType"
+                },
+                "rhythms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RhythmType"
+                    }
+                }
+            }
+        },
+        "models.EEGCombinedDataPoint": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "number",
+                "format": "float64"
+            }
+        },
+        "models.EEGFileConfig": {
+            "type": "object",
+            "required": [
+                "amplitudeColumn",
+                "experimentName",
+                "filename",
+                "id",
+                "timeColumn"
+            ],
+            "properties": {
+                "amplitudeColumn": {
+                    "type": "string"
+                },
+                "experimentName": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rawFile": {
+                    "description": "Base64 encoded CSV content",
+                    "type": "string"
+                },
+                "serverId": {
+                    "description": "Can be ignored",
+                    "type": "string"
+                },
+                "timeColumn": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.EEGLinePlot": {
+            "type": "object",
+            "required": [
+                "data"
+            ],
+            "properties": {
+                "area": {
+                    "type": "boolean"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.EEGCombinedDataPoint"
+                    }
+                },
+                "seriesMetadata": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.EEGSeriesMetadata"
+                    }
+                },
+                "showLegend": {
+                    "type": "boolean"
+                },
+                "xAxisName": {
+                    "type": "string"
+                },
+                "xHighlightRange": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "xMax": {
+                    "type": "number"
+                },
+                "xMin": {
+                    "type": "number"
+                },
+                "yAxisName": {
+                    "type": "string"
+                },
+                "yLogarithmic": {
+                    "type": "boolean"
+                },
+                "yMax": {
+                    "type": "number"
+                },
+                "yMin": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.EEGPlotPair": {
+            "type": "object",
+            "required": [
+                "psdPlot",
+                "signalPlot"
+            ],
+            "properties": {
+                "psdPlot": {
+                    "$ref": "#/definitions/models.EEGLinePlot"
+                },
+                "signalPlot": {
+                    "$ref": "#/definitions/models.EEGLinePlot"
+                }
+            }
+        },
+        "models.EEGSeriesMetadata": {
+            "type": "object",
+            "required": [
+                "dataKey"
+            ],
+            "properties": {
+                "dataKey": {
+                    "type": "string"
+                },
+                "legend": {
+                    "type": "string"
+                },
+                "preferredColor": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RhythmType": {
+            "type": "string",
+            "enum": [
+                "ALPHA",
+                "BETA",
+                "GAMMA",
+                "DELTA",
+                "THETA",
+                "KAPPA",
+                "LAMBDA",
+                "MU"
+            ],
+            "x-enum-comments": {
+                "RhythmAlpha": "8–13 Hz",
+                "RhythmBeta": "13–30 Hz",
+                "RhythmDelta": "0.5–4 Hz",
+                "RhythmGamma": "30–100 Hz",
+                "RhythmKappa": "8–13 Hz",
+                "RhythmLambda": "4–8 Hz",
+                "RhythmMu": "8–13 Hz",
+                "RhythmTheta": "4–8 Hz"
+            },
+            "x-enum-descriptions": [
+                "8–13 Hz",
+                "13–30 Hz",
+                "30–100 Hz",
+                "0.5–4 Hz",
+                "4–8 Hz",
+                "8–13 Hz",
+                "4–8 Hz",
+                "8–13 Hz"
+            ],
+            "x-enum-varnames": [
+                "RhythmAlpha",
+                "RhythmBeta",
+                "RhythmGamma",
+                "RhythmDelta",
+                "RhythmTheta",
+                "RhythmKappa",
+                "RhythmLambda",
+                "RhythmMu"
+            ]
+        }
+    }
+}

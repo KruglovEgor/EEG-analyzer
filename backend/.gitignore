@@ -38,6 +38,3 @@ __pycache__/
 env/
 venv/
 Thumbs.db
-
-# Swagger docs (generated)
-docs/
