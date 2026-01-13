@@ -46,7 +46,7 @@ func (f *ButterworthFilter) highPass(signal []float64) []float64 {
 	filtered[0] = signal[0]
 
 	for i := 1; i < len(signal); i++ {
-		filtered[i] = alpha*(filtered[i-1]+signal[i]-signal[i-1])
+		filtered[i] = alpha * (filtered[i-1] + signal[i] - signal[i-1])
 	}
 
 	return filtered

@@ -148,3 +148,4 @@ eeg-backend/.idea/
 temp/
 .vscode/
 *debug*
+verification/
