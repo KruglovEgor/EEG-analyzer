@@ -18,10 +18,10 @@ const (
 type BrainZone string
 
 const (
-	BrainZoneFrontal   BrainZone = "FRONTAL"
-	BrainZoneParietal  BrainZone = "PARIETAL"
-	BrainZoneCentral   BrainZone = "CENTRAL"
-	BrainZoneTemporal  BrainZone = "TEMPORAL"
+	BrainZoneFrontal  BrainZone = "FRONTAL"
+	BrainZoneParietal BrainZone = "PARIETAL"
+	BrainZoneCentral  BrainZone = "CENTRAL"
+	BrainZoneTemporal BrainZone = "TEMPORAL"
 	BrainZoneOccipital BrainZone = "OCCIPITAL"
 )
 
@@ -44,9 +44,9 @@ var DefaultRhythmBands = map[RhythmType]RhythmBand{
 	RhythmDelta:  {Low: 0.5, High: 4},
 	RhythmTheta:  {Low: 4, High: 8},
 	RhythmAlpha:  {Low: 8, High: 13},
-	RhythmBeta:   {Low: 14, High: 40},
+	RhythmBeta:   {Low: 13, High: 30},
 	RhythmGamma:  {Low: 30, High: 100},
 	RhythmMu:     {Low: 8, High: 13},
-	RhythmLambda: {Low: 4, High: 6},
-	RhythmKappa:  {Low: 8, High: 12},
+	RhythmLambda: {Low: 4, High: 8},
+	RhythmKappa:  {Low: 8, High: 13},
 }

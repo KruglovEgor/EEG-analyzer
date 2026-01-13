@@ -15,12 +15,11 @@ type RhythmAnalysisResult struct {
 }
 
 // AnalyzeRhythm performs complete analysis for a specific rhythm band
-// Matches Python implementation from lab notebook:
-// 1. Remove DC offset
-// 2. Apply FFT pre-filter (0.5-40 Hz) to remove noise
-// 3. Compute PSD using Welch's method on the pre-filtered signal
-// 4. Extract power in the rhythm band
-// 5. Apply bandpass filter for visualization
+// Matches Python implementation:
+// 1. Clean signal (remove DC offset)
+// 2. Compute PSD using Welch's method on the full signal
+// 3. Extract power in the rhythm band
+// 4. Filter signal for visualization
 func AnalyzeRhythm(
 	timeData []float64,
 	ampData []float64,
@@ -33,25 +32,21 @@ func AnalyzeRhythm(
 		return nil, models.ErrInvalidRhythmBand
 	}
 
-	// Step 1: Remove DC offset
+	// Preprocess signal (remove DC offset)
 	signal := RemoveDCOffset(ampData)
 
-	// Step 2: Pre-filter with FFT to remove noise (0.5-40 Hz)
-	// This matches Python: df_cleaned = clean_eeg_data(df, lower_freq=0.5, upper_freq=40, ...)
-	signalPreFiltered := PreFilterSignal(signal, samplingRate, 0.5, 40)
-
-	// Step 3: Compute PSD using Welch's method on the PRE-FILTERED signal
+	// Compute PSD using Welch's method on the FULL signal (not filtered)
 	// This matches Python: calculate_lambd_power(df_cleaned['A0 с FFT (В)'].values, sampling_rate)
-	fftResult := ComputeWelchPSD(signalPreFiltered, samplingRate, 1024)
+	fftResult := ComputeWelchPSD(signal, samplingRate, 1024)
 
-	// Step 4: Calculate band power by integrating PSD in the rhythm band
+	// Calculate band power by integrating PSD in the rhythm band
 	absolutePower := ExtractBandPower(fftResult, band.Low, band.High)
 	totalPower := CalculateTotalPower(fftResult)
 	relativePower := CalculateRelativePower(absolutePower, totalPower)
 
-	// Step 5: Apply bandpass filter for visualization (on pre-filtered signal)
+	// Filter signal for visualization (bandpass filter)
 	filter := NewButterworthFilter(band.Low, band.High, samplingRate)
-	filtered := filter.Apply(signalPreFiltered)
+	filtered := filter.Apply(signal)
 
 	return &RhythmAnalysisResult{
 		Rhythm:         rhythm,
