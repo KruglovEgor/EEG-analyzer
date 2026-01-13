@@ -10,11 +10,101 @@ import (
 // FFTResult contains the results of FFT analysis
 type FFTResult struct {
 	Frequencies []float64 // Frequency bins (Hz)
-	PSD         []float64 // Power Spectral Density
+	PSD         []float64 // Power Spectral Density (µV²/Hz)
 	Magnitude   []float64 // Magnitude spectrum
 }
 
+// ComputeWelchPSD computes Power Spectral Density using Welch's method
+// This matches the Python implementation: welch(data, fs=sampling_rate, nperseg=1024)
+func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg int) *FFTResult {
+	n := len(signal)
+	if n < nperseg {
+		// Fall back to simple FFT if signal is too short
+		return ComputeFFT(signal, samplingRate)
+	}
+
+	// Welch parameters (matching scipy defaults)
+	if nperseg <= 0 {
+		nperseg = 1024
+	}
+	noverlap := nperseg / 2 // 50% overlap (scipy default)
+
+	// Calculate number of segments
+	step := nperseg - noverlap
+	numSegments := (n - noverlap) / step
+
+	if numSegments < 1 {
+		return ComputeFFT(signal, samplingRate)
+	}
+
+	// Frequency bins
+	halfN := nperseg / 2
+	frequencies := make([]float64, halfN)
+	freqStep := samplingRate / float64(nperseg)
+	for i := 0; i < halfN; i++ {
+		frequencies[i] = float64(i) * freqStep
+	}
+
+	// Calculate window scaling factor (sum of squared window values)
+	// For Hamming window, this compensates for the energy loss due to windowing
+	windowScale := 0.0
+	for i := 0; i < nperseg; i++ {
+		w := 0.54 - 0.46*math.Cos(2*math.Pi*float64(i)/float64(nperseg-1))
+		windowScale += w * w
+	}
+
+	// Accumulate PSD from all segments
+	psdAccum := make([]float64, halfN)
+
+	for seg := 0; seg < numSegments; seg++ {
+		start := seg * step
+		end := start + nperseg
+		if end > n {
+			break
+		}
+
+		// Extract segment
+		segment := signal[start:end]
+
+		// Apply Hamming window
+		windowed := applyHammingWindow(segment)
+
+		// Perform FFT on segment
+		fftOutput := fft.FFTReal(windowed)
+
+		// Accumulate power
+		// scipy.signal.welch uses: (|FFT|² * 2) / (fs * sum(window²))
+		// Factor of 2 accounts for negative frequencies (one-sided PSD)
+		for i := 0; i < halfN; i++ {
+			mag := cmplx.Abs(fftOutput[i])
+			psdAccum[i] += (mag * mag)
+		}
+	}
+
+	// Average over all segments and normalize
+	psd := make([]float64, halfN)
+	scale := samplingRate * windowScale
+	for i := 0; i < halfN; i++ {
+		psd[i] = (psdAccum[i] / float64(numSegments)) * 2.0 / scale
+		// DC and Nyquist components should not be doubled
+		if i == 0 || (nperseg%2 == 0 && i == halfN-1) {
+			psd[i] = psd[i] / 2.0
+		}
+		// Ensure minimum value for log scale
+		if psd[i] < 1e-10 {
+			psd[i] = 1e-10
+		}
+	}
+
+	return &FFTResult{
+		Frequencies: frequencies,
+		PSD:         psd,
+		Magnitude:   nil, // Not computed in Welch method
+	}
+}
+
 // ComputeFFT performs FFT on the signal and returns frequency domain data
+// Kept for compatibility, but ComputeWelchPSD should be preferred for PSD analysis
 func ComputeFFT(signal []float64, samplingRate float64) *FFTResult {
 	n := len(signal)
 	if n < 2 {
@@ -77,24 +167,25 @@ func applyHammingWindow(signal []float64) []float64 {
 	return windowed
 }
 
-// ExtractBandPower calculates the power in a specific frequency band
+// ExtractBandPower calculates the power in a specific frequency band using trapezoidal integration
 func ExtractBandPower(fftResult *FFTResult, lowFreq, highFreq float64) float64 {
-	power := 0.0
-	count := 0
+	// Find indices in the frequency band
+	var freqsInBand []float64
+	var psdInBand []float64
 
 	for i, freq := range fftResult.Frequencies {
 		if freq >= lowFreq && freq <= highFreq {
-			power += fftResult.PSD[i]
-			count++
+			freqsInBand = append(freqsInBand, freq)
+			psdInBand = append(psdInBand, fftResult.PSD[i])
 		}
 	}
 
-	if count == 0 {
+	if len(freqsInBand) < 2 {
 		return 0
 	}
 
-	// Return average power in the band
-	return power / float64(count)
+	// Integrate using trapezoidal rule
+	return trapezoidalIntegration(freqsInBand, psdInBand)
 }
 
 // CalculateRelativePower calculates relative power as percentage of total
@@ -105,11 +196,27 @@ func CalculateRelativePower(bandPower, totalPower float64) float64 {
 	return (bandPower / totalPower) * 100.0
 }
 
-// CalculateTotalPower calculates total power across all frequencies
+// CalculateTotalPower calculates total power across all frequencies using trapezoidal integration
 func CalculateTotalPower(fftResult *FFTResult) float64 {
-	total := 0.0
-	for _, psd := range fftResult.PSD {
-		total += psd
+	if len(fftResult.Frequencies) < 2 {
+		return 0
 	}
-	return total
+	return trapezoidalIntegration(fftResult.Frequencies, fftResult.PSD)
+}
+
+// trapezoidalIntegration performs numerical integration using the trapezoidal rule
+// Equivalent to NumPy's trapezoid function: np.trapezoid(y, x)
+func trapezoidalIntegration(x, y []float64) float64 {
+	if len(x) != len(y) || len(x) < 2 {
+		return 0
+	}
+
+	sum := 0.0
+	for i := 0; i < len(x)-1; i++ {
+		dx := x[i+1] - x[i]
+		avgY := (y[i] + y[i+1]) / 2.0
+		sum += dx * avgY
+	}
+
+	return sum
 }

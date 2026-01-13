@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 .idea/
 eeg-frontend/.idea/
 eeg-backend/.idea/
+
+temp/
+.vscode/
+*debug*

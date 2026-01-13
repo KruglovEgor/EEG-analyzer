@@ -192,17 +192,18 @@ func createPlotPair(
 	}
 
 	// Create metadata
-	rawLegend := "Raw Signal"
-	filteredLegend := "Filtered Signal"
-	psdLegend := "PSD"
-	secondaryColor := "secondary"
-	primaryColor := "primary"
+	// Metadata fields commented out as per frontend request - frontend will add localized labels
+	// rawLegend := "Raw Signal"
+	// filteredLegend := "Filtered Signal"
+	// psdLegend := "PSD"
+	// secondaryColor := "secondary"
+	// primaryColor := "primary"
 
-	yLogTrue := true
-	xAxisFreq := "Frequency (Hz)"
-	yAxisPower := "Power (µV²/Hz)"
-	xAxisTime := "Time (s)"
-	yAxisAmp := "Amplitude (µV)"
+	// yLogTrue := true
+	// xAxisFreq := "Frequency (Hz)"
+	// yAxisPower := "Power (µV²/Hz)"
+	// xAxisTime := "Time (s)"
+	// yAxisAmp := "Amplitude (µV)"
 
 	// Get rhythm band for highlight
 	band := models.DefaultRhythmBands[result.Rhythm]
@@ -210,23 +211,23 @@ func createPlotPair(
 
 	return models.EEGPlotPair{
 		PSDPlot: models.EEGLinePlot{
-			SeriesMetadata: []models.EEGSeriesMetadata{
-				{DataKey: "psd", Legend: &psdLegend, PreferredColor: &secondaryColor},
-			},
-			Data:            psdData,
-			YLogarithmic:    &yLogTrue,
-			XAxisName:       &xAxisFreq,
-			YAxisName:       &yAxisPower,
+			// SeriesMetadata: []models.EEGSeriesMetadata{
+			//   {DataKey: "psd", Legend: &psdLegend, PreferredColor: &secondaryColor},
+			// },
+			Data: psdData,
+			// YLogarithmic:    &yLogTrue,
+			// XAxisName:       &xAxisFreq,
+			// YAxisName:       &yAxisPower,
 			XHighlightRange: &xHighlight,
 		},
 		SignalPlot: models.EEGLinePlot{
-			SeriesMetadata: []models.EEGSeriesMetadata{
-				{DataKey: "raw", Legend: &rawLegend, PreferredColor: &primaryColor},
-				{DataKey: "filtered", Legend: &filteredLegend, PreferredColor: &secondaryColor},
-			},
-			Data:      signalData,
-			XAxisName: &xAxisTime,
-			YAxisName: &yAxisAmp,
+			// SeriesMetadata: []models.EEGSeriesMetadata{
+			//   {DataKey: "raw", Legend: &rawLegend, PreferredColor: &primaryColor},
+			//   {DataKey: "filtered", Legend: &filteredLegend, PreferredColor: &secondaryColor},
+			// },
+			Data: signalData,
+			// XAxisName: &xAxisTime,
+			// YAxisName: &yAxisAmp,
 		},
 	}
 }
