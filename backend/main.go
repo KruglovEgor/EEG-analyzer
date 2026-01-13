@@ -33,6 +33,9 @@ func main() {
 	// Create router
 	router := gin.Default()
 
+	// Add memory monitoring middleware
+	router.Use(MemoryMonitorMiddleware())
+
 	// Enable gzip compression
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
