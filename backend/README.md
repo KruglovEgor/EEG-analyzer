@@ -1,13 +1,3 @@
-# EEG Analyzer
-
-Веб-приложение для анализа ЭЭГ (электроэнцефалография) сигналов с поддержкой множественных ритмов мозга.
-
-**Состав проекта:**
-- Backend (Go REST API)
-- [Frontend (React)](https://github.com/Vad1mChK/CourseworkEEG)
-
----
-
 # EEG Analyzer Backend
 
 REST API для анализа ЭЭГ (электроэнцефалография) сигналов с поддержкой множественных ритмов и режимов анализа.
@@ -124,4 +114,3 @@ curl http://localhost:3000/health
 - Gin Web Framework
 - Swagger/OpenAPI
 - Docker & Docker Compose
-

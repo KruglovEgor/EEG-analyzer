@@ -95,9 +95,9 @@ const docTemplate = `{
         },
         "/preview": {
             "post": {
-                "description": "Shows how filters will affect the signal before full analysis",
+                "description": "Shows how filters will affect the signal before full analysis (multipart/form-data)",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -108,13 +108,50 @@ const docTemplate = `{
                 "summary": "Preview EEG signal with filter parameters",
                 "parameters": [
                     {
-                        "description": "Preview Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.EEGPreviewRequest"
-                        }
+                        "type": "string",
+                        "description": "Preview ID",
+                        "name": "previewId",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "CSV file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Experiment name",
+                        "name": "experimentName",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Rhythm type (ALPHA, BETA, etc.)",
+                        "name": "rhythm",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter parameters as JSON string",
+                        "name": "filterParams",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Time column name (default: time)",
+                        "name": "timeColumn",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Amplitude column name (default: amplitude)",
+                        "name": "amplitudeColumn",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -400,32 +437,6 @@ const docTemplate = `{
                 },
                 "signalPlot": {
                     "$ref": "#/definitions/models.EEGLinePlot"
-                }
-            }
-        },
-        "models.EEGPreviewRequest": {
-            "type": "object",
-            "required": [
-                "experimentName",
-                "file",
-                "previewId",
-                "rhythm"
-            ],
-            "properties": {
-                "experimentName": {
-                    "type": "string"
-                },
-                "file": {
-                    "$ref": "#/definitions/models.EEGFileConfig"
-                },
-                "filterParams": {
-                    "$ref": "#/definitions/models.EEGFilterParams"
-                },
-                "previewId": {
-                    "type": "string"
-                },
-                "rhythm": {
-                    "$ref": "#/definitions/models.RhythmType"
                 }
             }
         },

@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"eeg-analyzer/analysis"
 	"eeg-analyzer/models"
@@ -12,25 +14,79 @@ import (
 
 // PreviewEEG godoc
 // @Summary Preview EEG signal with filter parameters
-// @Description Shows how filters will affect the signal before full analysis
+// @Description Shows how filters will affect the signal before full analysis (multipart/form-data)
 // @Tags analysis
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
-// @Param request body models.EEGPreviewRequest true "Preview Request"
+// @Param previewId formData string true "Preview ID"
+// @Param file formData file true "CSV file"
+// @Param experimentName formData string true "Experiment name"
+// @Param rhythm formData string true "Rhythm type (ALPHA, BETA, etc.)"
+// @Param filterParams formData string false "Filter parameters as JSON string"
+// @Param timeColumn formData string false "Time column name (default: time)"
+// @Param amplitudeColumn formData string false "Amplitude column name (default: amplitude)"
 // @Success 200 {object} models.EEGPreviewResponse
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /preview [post]
 func PreviewEEG(c *gin.Context) {
-	var req models.EEGPreviewRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Parse multipart form (32 MB max)
+	if err := c.Request.ParseMultipartForm(32 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to parse multipart form: %v", err)})
 		return
 	}
 
-	// Parse CSV data
-	timeData, ampData, err := analysis.ParseCSVData(req.File)
+	// Get form fields
+	previewID := c.PostForm("previewId")
+	experimentName := c.PostForm("experimentName")
+	rhythmStr := c.PostForm("rhythm")
+	timeColumn := c.PostForm("timeColumn")
+	amplitudeColumn := c.PostForm("amplitudeColumn")
+	filterParamsStr := c.PostForm("filterParams")
+
+	if previewID == "" || experimentName == "" || rhythmStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Required fields: previewId, experimentName, rhythm"})
+		return
+	}
+
+	// Default column names
+	if timeColumn == "" {
+		timeColumn = "time"
+	}
+	if amplitudeColumn == "" {
+		amplitudeColumn = "amplitude"
+	}
+
+	// Parse rhythm
+	rhythm := models.RhythmType(strings.ToUpper(rhythmStr))
+
+	// Parse filter params if provided
+	var filterParams *models.EEGFilterParams
+	if filterParamsStr != "" {
+		filterParams = &models.EEGFilterParams{}
+		if err := json.Unmarshal([]byte(filterParamsStr), filterParams); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid filterParams JSON: %v", err)})
+			return
+		}
+	}
+
+	// Get uploaded file
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+		return
+	}
+
+	// Open file
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to open file: %v", err)})
+		return
+	}
+	defer file.Close()
+
+	// Parse CSV
+	timeData, ampData, err := parseCSVFromReader(file, timeColumn, amplitudeColumn)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Failed to parse CSV: %v", err)})
 		return
@@ -40,7 +96,7 @@ func PreviewEEG(c *gin.Context) {
 	samplingRate := analysis.CalculateSamplingRate(timeData)
 
 	// Analyze with filter params
-	result, err := analysis.AnalyzeRhythm(timeData, ampData, req.Rhythm, samplingRate, req.FilterParams)
+	result, err := analysis.AnalyzeRhythm(timeData, ampData, rhythm, samplingRate, filterParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,9 +107,9 @@ func PreviewEEG(c *gin.Context) {
 
 	// Build response
 	response := &models.EEGPreviewResponse{
-		PreviewID:      req.PreviewID,
-		ExperimentName: req.ExperimentName,
-		Rhythm:         req.Rhythm,
+		PreviewID:      previewID,
+		ExperimentName: experimentName,
+		Rhythm:         rhythm,
 		Plot:           plotPair,
 	}
 

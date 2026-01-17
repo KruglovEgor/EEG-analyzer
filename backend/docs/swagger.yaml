@@ -178,24 +178,6 @@ definitions:
     - psdPlot
     - signalPlot
     type: object
-  models.EEGPreviewRequest:
-    properties:
-      experimentName:
-        type: string
-      file:
-        $ref: '#/definitions/models.EEGFileConfig'
-      filterParams:
-        $ref: '#/definitions/models.EEGFilterParams'
-      previewId:
-        type: string
-      rhythm:
-        $ref: '#/definitions/models.RhythmType'
-    required:
-    - experimentName
-    - file
-    - previewId
-    - rhythm
-    type: object
   models.EEGPreviewResponse:
     properties:
       experimentName:
@@ -313,15 +295,41 @@ paths:
   /preview:
     post:
       consumes:
-      - application/json
-      description: Shows how filters will affect the signal before full analysis
+      - multipart/form-data
+      description: Shows how filters will affect the signal before full analysis (multipart/form-data)
       parameters:
-      - description: Preview Request
-        in: body
-        name: request
+      - description: Preview ID
+        in: formData
+        name: previewId
         required: true
-        schema:
-          $ref: '#/definitions/models.EEGPreviewRequest'
+        type: string
+      - description: CSV file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Experiment name
+        in: formData
+        name: experimentName
+        required: true
+        type: string
+      - description: Rhythm type (ALPHA, BETA, etc.)
+        in: formData
+        name: rhythm
+        required: true
+        type: string
+      - description: Filter parameters as JSON string
+        in: formData
+        name: filterParams
+        type: string
+      - description: 'Time column name (default: time)'
+        in: formData
+        name: timeColumn
+        type: string
+      - description: 'Amplitude column name (default: amplitude)'
+        in: formData
+        name: amplitudeColumn
+        type: string
       produces:
       - application/json
       responses:
