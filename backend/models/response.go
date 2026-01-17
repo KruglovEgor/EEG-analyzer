@@ -18,8 +18,9 @@ type EEGPlotPair struct {
 
 // EEGAnalysisResponse is the response structure
 type EEGAnalysisResponse struct {
-	AnalysisID   string       `json:"analysisId" binding:"required"`
-	AnalysisMode AnalysisMode `json:"analysisMode" binding:"required"`
+	AnalysisID   string           `json:"analysisId" binding:"required"`
+	AnalysisMode AnalysisMode     `json:"analysisMode" binding:"required"`
+	FilterParams *EEGFilterParams `json:"filterParams,omitempty"`
 
 	// For SINGLE mode
 	ExperimentName *string                    `json:"experimentName,omitempty"`

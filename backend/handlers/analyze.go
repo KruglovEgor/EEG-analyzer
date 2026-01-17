@@ -64,18 +64,32 @@ func handleSingleAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRe
 	// Calculate sampling rate
 	samplingRate := analysis.CalculateSamplingRate(timeData)
 
-	// Analyze all requested rhythms
-	rhythmResults, err := analysis.AnalyzeMultipleRhythms(timeData, ampData, req.Rhythms, samplingRate)
+	// Analyze all requested rhythms (use defaults for frequency boundaries)
+	rhythmResults, err := analysis.AnalyzeMultipleRhythmsWithParams(timeData, ampData, req.Rhythms, samplingRate, req.FilterParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze rhythms: %w", err)
 	}
 
-	// Build response
+	// Calculate total power once for relative power calculation
+	// Use the PSD from any rhythm (they all use same base signal)
+	var totalPower float64
+	if len(rhythmResults) > 0 {
+		// Get first rhythm result to access PSD
+		for _, result := range rhythmResults {
+			// Compute total power from the full PSD
+			totalPower = analysis.CalculateTotalPowerFromArrays(result.Frequencies, result.PSD)
+			break
+		}
+	}
+
+	// Build response - don't include filterParams for SINGLE mode
+	// because each rhythm uses different frequency boundaries
 	response := &models.EEGAnalysisResponse{
 		AnalysisID:     req.AnalysisID,
 		AnalysisMode:   models.ModeSingle,
 		ExperimentName: &req.File.ExperimentName,
 		Rhythms:        req.Rhythms,
+		FilterParams:   nil, // Don't return filterParams for SINGLE mode with multiple rhythms
 		DataByRhythm:   make(map[models.RhythmType]models.EEGPlotPair),
 	}
 
@@ -86,7 +100,10 @@ func handleSingleAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRe
 	for _, rhythm := range req.Rhythms {
 		result := rhythmResults[rhythm]
 		absolutePowers = append(absolutePowers, [2]interface{}{rhythm, result.AbsolutePower})
-		relativePowers = append(relativePowers, [2]interface{}{rhythm, result.RelativePower})
+
+		// Calculate relative power from common total power
+		relativePower := analysis.CalculateRelativePower(result.AbsolutePower, totalPower)
+		relativePowers = append(relativePowers, [2]interface{}{rhythm, relativePower})
 
 		// Create plot pair for this rhythm
 		plotPair := createPlotPair(timeData, ampData, result, samplingRate)
@@ -109,6 +126,7 @@ func handleGroupAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRes
 		AnalysisID:       req.AnalysisID,
 		AnalysisMode:     models.ModeGroup,
 		Rhythm:           req.Rhythm,
+		FilterParams:     req.FilterParams,
 		ExperimentNames:  make([]string, 0, len(req.Files)),
 		DataByExperiment: make(map[string]models.EEGPlotPair),
 	}
@@ -127,8 +145,8 @@ func handleGroupAnalysis(req *models.EEGAnalysisRequest) (*models.EEGAnalysisRes
 		// Calculate sampling rate
 		samplingRate := analysis.CalculateSamplingRate(timeData)
 
-		// Analyze the specified rhythm
-		result, err := analysis.AnalyzeRhythm(timeData, ampData, *req.Rhythm, samplingRate)
+		// Analyze the specified rhythm with filter params
+		result, err := analysis.AnalyzeRhythm(timeData, ampData, *req.Rhythm, samplingRate, req.FilterParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to analyze rhythm for %s: %w", fileConfig.ExperimentName, err)
 		}

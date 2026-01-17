@@ -55,6 +55,7 @@ func main() {
 	// Analysis endpoints
 	router.POST("/analyze", handlers.AnalyzeMultipart) // Multipart/form-data (recommended)
 	router.POST("/analyze-json", handlers.AnalyzeEEG)  // JSON with base64 (legacy/Swagger)
+	router.POST("/preview", handlers.PreviewEEG)       // Preview with filter params
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

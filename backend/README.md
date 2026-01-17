@@ -19,11 +19,12 @@ REST API for real-time EEG (electroencephalography) signal analysis with support
   - KAPPA (8-13 Hz) - Alpha variant
 
 - **Signal Processing**
-  - Butterworth bandpass filtering
-  - FFT with Hamming window
-  - Power Spectral Density (PSD) calculation
+  - DC offset removal
+  - FFT pre-filter (0.5-40 Hz) for PSD computation
+  - Welch's method for Power Spectral Density
+  - Butterworth bandpass filtering (1st-4th order) for visualization
+  - Configurable filter parameters (frequency, order, PSD segments)
   - LTTB downsampling (1000-2000 points)
-  - Automatic DC offset removal
 
 - **Performance**
   - Gzip compression (70-90% size reduction)
@@ -191,6 +192,21 @@ backend/
 ├── docs/                # Swagger generated docs
 └── testdata/            # Test CSV files
 ```
+
+## Signal Processing
+
+The backend implements a dual-path processing pipeline:
+
+1. **Analysis Path**: FFT pre-filter (0.5-40 Hz) → Welch PSD → Power extraction
+2. **Visualization Path**: Butterworth filter → Downsampling → Display
+
+See [detailed signal processing documentation](../temp/SIGNAL_PROCESSING.md) for mathematical explanations.
+
+**Key Features:**
+- Configurable Butterworth filter order (1-4)
+- Adjustable Welch PSD parameters (nperseg, noverlap)
+- Automatic handling of short signals
+- Single-point PSD approximation for low-resolution data
 
 ## Dependencies
 

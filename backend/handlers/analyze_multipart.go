@@ -87,6 +87,15 @@ func handleSingleMultipart(c *gin.Context) {
 		return
 	}
 
+	// Calculate total power once for relative power calculation
+	var totalPower float64
+	if len(results) > 0 {
+		for _, result := range results {
+			totalPower = analysis.CalculateTotalPowerFromArrays(result.Frequencies, result.PSD)
+			break
+		}
+	}
+
 	// Build response
 	response := &models.EEGAnalysisResponse{
 		AnalysisID:     analysisID,
@@ -104,7 +113,9 @@ func handleSingleMultipart(c *gin.Context) {
 		response.DataByRhythm[rhythm] = plotPair
 
 		absolutePowers = append(absolutePowers, [2]interface{}{rhythm, result.AbsolutePower})
-		relativePowers = append(relativePowers, [2]interface{}{rhythm, result.RelativePower})
+		// Calculate relative power from common total power
+		relativePower := analysis.CalculateRelativePower(result.AbsolutePower, totalPower)
+		relativePowers = append(relativePowers, [2]interface{}{rhythm, relativePower})
 	}
 
 	response.AbsolutePowers = absolutePowers
@@ -179,7 +190,8 @@ func handleGroupMultipart(c *gin.Context) {
 
 		samplingRate := analysis.CalculateSamplingRate(timeData)
 
-		result, err := analysis.AnalyzeRhythm(timeData, ampData, rhythmType, samplingRate)
+		// Analyze the specified rhythm with filter params
+		result, err := analysis.AnalyzeRhythm(timeData, ampData, rhythmType, samplingRate, nil)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Error analyzing %s: %v", fileHeader.Filename, err)})
 			return

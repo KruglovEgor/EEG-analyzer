@@ -15,18 +15,21 @@ type FFTResult struct {
 
 // ComputeWelchPSD computes Power Spectral Density using Welch's method
 // This matches the Python implementation: welch(data, fs=sampling_rate, nperseg=1024)
-func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg int) *FFTResult {
+func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg, noverlap int) *FFTResult {
 	n := len(signal)
+
+	// Validate and set defaults
+	if nperseg <= 0 {
+		nperseg = 1024
+	}
+	if noverlap < 0 || noverlap >= nperseg {
+		noverlap = nperseg / 2 // 50% overlap (scipy default)
+	}
+
 	if n < nperseg {
 		// Fall back to simple FFT if signal is too short
 		return computeSimpleFFT(signal, samplingRate)
 	}
-
-	// Welch parameters (matching scipy defaults)
-	if nperseg <= 0 {
-		nperseg = 1024
-	}
-	noverlap := nperseg / 2 // 50% overlap (scipy default)
 
 	// Calculate number of segments
 	step := nperseg - noverlap
@@ -171,8 +174,21 @@ func ExtractBandPower(fftResult *FFTResult, lowFreq, highFreq float64) float64 {
 		}
 	}
 
-	if len(freqsInBand) < 2 {
+	if len(freqsInBand) == 0 {
 		return 0
+	}
+
+	// For single point, use simple approximation (PSD value * frequency resolution)
+	if len(freqsInBand) == 1 {
+		// Calculate frequency resolution
+		var freqRes float64
+		if len(fftResult.Frequencies) > 1 {
+			freqRes = fftResult.Frequencies[1] - fftResult.Frequencies[0]
+		} else {
+			freqRes = 1.0
+		}
+		power := psdInBand[0] * freqRes
+		return power
 	}
 
 	// Integrate using trapezoidal rule
@@ -193,6 +209,14 @@ func CalculateTotalPower(fftResult *FFTResult) float64 {
 		return 0
 	}
 	return trapezoidalIntegration(fftResult.Frequencies, fftResult.PSD)
+}
+
+// CalculateTotalPowerFromArrays calculates total power from frequency and PSD arrays
+func CalculateTotalPowerFromArrays(frequencies, psd []float64) float64 {
+	if len(frequencies) < 2 || len(psd) < 2 {
+		return 0
+	}
+	return trapezoidalIntegration(frequencies, psd)
 }
 
 // trapezoidalIntegration performs numerical integration using the trapezoidal rule

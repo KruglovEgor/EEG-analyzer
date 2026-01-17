@@ -48,6 +48,8 @@ definitions:
         items:
           $ref: '#/definitions/models.EEGFileConfig'
         type: array
+      filterParams:
+        $ref: '#/definitions/models.EEGFilterParams'
       rhythm:
         $ref: '#/definitions/models.RhythmType'
       rhythms:
@@ -86,6 +88,8 @@ definitions:
         items:
           type: string
         type: array
+      filterParams:
+        $ref: '#/definitions/models.EEGFilterParams'
       relativePowers:
         description: '[[RhythmType, number]]'
         items:
@@ -132,6 +136,24 @@ definitions:
     - id
     - timeColumn
     type: object
+  models.EEGFilterParams:
+    properties:
+      filterMax:
+        description: Butterworth high cutoff (Hz)
+        type: number
+      filterMin:
+        description: Butterworth low cutoff (Hz)
+        type: number
+      filterOrder:
+        description: Butterworth filter order
+        type: integer
+      nOverlap:
+        description: Welch overlap size
+        type: integer
+      nPerSeg:
+        description: Welch segment size
+        type: integer
+    type: object
   models.EEGLinePlot:
     properties:
       data:
@@ -155,6 +177,40 @@ definitions:
     required:
     - psdPlot
     - signalPlot
+    type: object
+  models.EEGPreviewRequest:
+    properties:
+      experimentName:
+        type: string
+      file:
+        $ref: '#/definitions/models.EEGFileConfig'
+      filterParams:
+        $ref: '#/definitions/models.EEGFilterParams'
+      previewId:
+        type: string
+      rhythm:
+        $ref: '#/definitions/models.RhythmType'
+    required:
+    - experimentName
+    - file
+    - previewId
+    - rhythm
+    type: object
+  models.EEGPreviewResponse:
+    properties:
+      experimentName:
+        type: string
+      plot:
+        $ref: '#/definitions/models.EEGPlotPair'
+      previewId:
+        type: string
+      rhythm:
+        $ref: '#/definitions/models.RhythmType'
+    required:
+    - experimentName
+    - plot
+    - previewId
+    - rhythm
     type: object
   models.RhythmType:
     enum:
@@ -254,4 +310,38 @@ paths:
       summary: Health check endpoint
       tags:
       - health
+  /preview:
+    post:
+      consumes:
+      - application/json
+      description: Shows how filters will affect the signal before full analysis
+      parameters:
+      - description: Preview Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EEGPreviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EEGPreviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Preview EEG signal with filter parameters
+      tags:
+      - analysis
 swagger: "2.0"

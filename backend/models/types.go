@@ -18,10 +18,10 @@ const (
 type BrainZone string
 
 const (
-	BrainZoneFrontal  BrainZone = "FRONTAL"
-	BrainZoneParietal BrainZone = "PARIETAL"
-	BrainZoneCentral  BrainZone = "CENTRAL"
-	BrainZoneTemporal BrainZone = "TEMPORAL"
+	BrainZoneFrontal   BrainZone = "FRONTAL"
+	BrainZoneParietal  BrainZone = "PARIETAL"
+	BrainZoneCentral   BrainZone = "CENTRAL"
+	BrainZoneTemporal  BrainZone = "TEMPORAL"
 	BrainZoneOccipital BrainZone = "OCCIPITAL"
 )
 
@@ -49,4 +49,50 @@ var DefaultRhythmBands = map[RhythmType]RhythmBand{
 	RhythmMu:     {Low: 8, High: 13},
 	RhythmLambda: {Low: 4, High: 8},
 	RhythmKappa:  {Low: 8, High: 13},
+}
+
+// EEGFilterParams defines filter parameters for signal processing
+type EEGFilterParams struct {
+	FilterMin   float64 `json:"filterMin"`   // Butterworth low cutoff (Hz)
+	FilterMax   float64 `json:"filterMax"`   // Butterworth high cutoff (Hz)
+	FilterOrder int     `json:"filterOrder"` // Butterworth filter order
+	NPerSeg     int     `json:"nPerSeg"`     // Welch segment size
+	NOverlap    int     `json:"nOverlap"`    // Welch overlap size
+}
+
+// GetDefaultFilterParams returns default filter params for a given rhythm
+func GetDefaultFilterParams(rhythm RhythmType) EEGFilterParams {
+	band := DefaultRhythmBands[rhythm]
+	nPerSeg := 1024
+	return EEGFilterParams{
+		FilterMin:   band.Low,
+		FilterMax:   band.High,
+		FilterOrder: 1,
+		NPerSeg:     nPerSeg,
+		NOverlap:    nPerSeg / 2,
+	}
+}
+
+// Validate checks if filter params are valid and applies defaults
+func (p *EEGFilterParams) Validate(rhythm RhythmType) error {
+	defaults := GetDefaultFilterParams(rhythm)
+
+	// Apply defaults if not set or invalid
+	if p.FilterMin <= 0 {
+		p.FilterMin = defaults.FilterMin
+	}
+	if p.FilterMax <= 0 || p.FilterMax <= p.FilterMin {
+		p.FilterMax = defaults.FilterMax
+	}
+	if p.FilterOrder <= 0 {
+		p.FilterOrder = defaults.FilterOrder
+	}
+	if p.NPerSeg <= 0 {
+		p.NPerSeg = defaults.NPerSeg
+	}
+	if p.NOverlap < 0 || p.NOverlap >= p.NPerSeg {
+		p.NOverlap = defaults.NOverlap
+	}
+
+	return nil
 }

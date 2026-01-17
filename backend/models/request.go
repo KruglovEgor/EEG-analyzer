@@ -7,20 +7,21 @@ type EEGFileConfig struct {
 	ExperimentName  string  `json:"experimentName" binding:"required"`
 	TimeColumn      string  `json:"timeColumn" binding:"required"`
 	AmplitudeColumn string  `json:"amplitudeColumn" binding:"required"`
-	RawFile         *string `json:"rawFile"`         // Base64 encoded CSV content
-	ServerID        *string `json:"serverId"`        // Can be ignored
+	RawFile         *string `json:"rawFile"`  // Base64 encoded CSV content
+	ServerID        *string `json:"serverId"` // Can be ignored
 }
 
 // EEGAnalysisRequest is the base request structure
 type EEGAnalysisRequest struct {
-	AnalysisID   string        `json:"analysisId" binding:"required"`
-	AnalysisMode AnalysisMode  `json:"analysisMode" binding:"required"`
-	BrainZone    *BrainZone    `json:"brainZone"`
-	
+	AnalysisID   string           `json:"analysisId" binding:"required"`
+	AnalysisMode AnalysisMode     `json:"analysisMode" binding:"required"`
+	BrainZone    *BrainZone       `json:"brainZone"`
+	FilterParams *EEGFilterParams `json:"filterParams"`
+
 	// For SINGLE mode
 	File    *EEGFileConfig `json:"file"`
 	Rhythms []RhythmType   `json:"rhythms"`
-	
+
 	// For GROUP mode
 	Files  []EEGFileConfig `json:"files"`
 	Rhythm *RhythmType     `json:"rhythm"`

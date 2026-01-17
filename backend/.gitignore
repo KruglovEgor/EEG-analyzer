@@ -8,6 +8,7 @@ eeg-analyzer
 
 # Test binary
 *.test
+*.ps1
 
 # Output of the go coverage tool
 *.out
@@ -37,3 +38,7 @@ __pycache__/
 env/
 venv/
 Thumbs.db
+
+# Temporary files
+server_log.txt
+server_err.txt

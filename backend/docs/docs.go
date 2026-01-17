@@ -92,6 +92,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/preview": {
+            "post": {
+                "description": "Shows how filters will affect the signal before full analysis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analysis"
+                ],
+                "summary": "Preview EEG signal with filter parameters",
+                "parameters": [
+                    {
+                        "description": "Preview Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.EEGPreviewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.EEGPreviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -168,6 +220,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.EEGFileConfig"
                     }
                 },
+                "filterParams": {
+                    "$ref": "#/definitions/models.EEGFilterParams"
+                },
                 "rhythm": {
                     "$ref": "#/definitions/models.RhythmType"
                 },
@@ -222,6 +277,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "filterParams": {
+                    "$ref": "#/definitions/models.EEGFilterParams"
                 },
                 "relativePowers": {
                     "description": "[[RhythmType, number]]",
@@ -284,6 +342,31 @@ const docTemplate = `{
                 }
             }
         },
+        "models.EEGFilterParams": {
+            "type": "object",
+            "properties": {
+                "filterMax": {
+                    "description": "Butterworth high cutoff (Hz)",
+                    "type": "number"
+                },
+                "filterMin": {
+                    "description": "Butterworth low cutoff (Hz)",
+                    "type": "number"
+                },
+                "filterOrder": {
+                    "description": "Butterworth filter order",
+                    "type": "integer"
+                },
+                "nOverlap": {
+                    "description": "Welch overlap size",
+                    "type": "integer"
+                },
+                "nPerSeg": {
+                    "description": "Welch segment size",
+                    "type": "integer"
+                }
+            }
+        },
         "models.EEGLinePlot": {
             "type": "object",
             "required": [
@@ -317,6 +400,55 @@ const docTemplate = `{
                 },
                 "signalPlot": {
                     "$ref": "#/definitions/models.EEGLinePlot"
+                }
+            }
+        },
+        "models.EEGPreviewRequest": {
+            "type": "object",
+            "required": [
+                "experimentName",
+                "file",
+                "previewId",
+                "rhythm"
+            ],
+            "properties": {
+                "experimentName": {
+                    "type": "string"
+                },
+                "file": {
+                    "$ref": "#/definitions/models.EEGFileConfig"
+                },
+                "filterParams": {
+                    "$ref": "#/definitions/models.EEGFilterParams"
+                },
+                "previewId": {
+                    "type": "string"
+                },
+                "rhythm": {
+                    "$ref": "#/definitions/models.RhythmType"
+                }
+            }
+        },
+        "models.EEGPreviewResponse": {
+            "type": "object",
+            "required": [
+                "experimentName",
+                "plot",
+                "previewId",
+                "rhythm"
+            ],
+            "properties": {
+                "experimentName": {
+                    "type": "string"
+                },
+                "plot": {
+                    "$ref": "#/definitions/models.EEGPlotPair"
+                },
+                "previewId": {
+                    "type": "string"
+                },
+                "rhythm": {
+                    "$ref": "#/definitions/models.RhythmType"
                 }
             }
         },

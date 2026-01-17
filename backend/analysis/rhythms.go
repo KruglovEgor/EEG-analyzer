@@ -18,18 +18,24 @@ type RhythmAnalysisResult struct {
 // Processing steps:
 // 1. Remove DC offset (mean)
 // 2. Apply FFT bandpass (0.5-40 Hz) and compute PSD (matches Python implementation)
-// 3. Extract power in the rhythm band from PSD
-// 4. Apply Butterworth 1st order bandpass filter on original signal for visualization
+// 3. Extract power in the rhythm band from PSD (uses filterParams if provided)
+// 4. Apply Butterworth bandpass filter on original signal for visualization
 func AnalyzeRhythm(
 	timeData []float64,
 	ampData []float64,
 	rhythm models.RhythmType,
 	samplingRate float64,
+	filterParams *models.EEGFilterParams,
 ) (*RhythmAnalysisResult, error) {
-	// Get rhythm frequency band
-	band, ok := models.DefaultRhythmBands[rhythm]
-	if !ok {
-		return nil, models.ErrInvalidRhythmBand
+	// Get default parameters if not provided
+	if filterParams == nil {
+		defaults := models.GetDefaultFilterParams(rhythm)
+		filterParams = &defaults
+	} else {
+		// Validate and apply defaults for invalid values
+		if err := filterParams.Validate(rhythm); err != nil {
+			return nil, err
+		}
 	}
 
 	// Step 1: Remove DC offset from original signal
@@ -38,16 +44,16 @@ func AnalyzeRhythm(
 	// Step 2: For PSD computation, apply FFT pre-filter (0.5-40 Hz)
 	// This matches Python implementation: clean_eeg_data() + welch()
 	signalForPSD := ApplyFFTBandpass(signal, samplingRate, 0.5, 40.0)
-	fftResult := ComputeWelchPSD(signalForPSD, samplingRate, 1024)
+	fftResult := ComputeWelchPSD(signalForPSD, samplingRate, filterParams.NPerSeg, filterParams.NOverlap)
 
-	// Step 3: Calculate band power by integrating PSD in the rhythm band
-	absolutePower := ExtractBandPower(fftResult, band.Low, band.High)
+	// Step 3: Calculate band power using filterParams boundaries
+	absolutePower := ExtractBandPower(fftResult, filterParams.FilterMin, filterParams.FilterMax)
 	totalPower := CalculateTotalPower(fftResult)
 	relativePower := CalculateRelativePower(absolutePower, totalPower)
 
 	// Step 4: For visualization, apply Butterworth filter on the ORIGINAL signal
-	// This provides cleaner visual representation without harsh FFT artifacts
-	filter := NewButterworthFilter(band.Low, band.High, samplingRate)
+	// Uses filterParams boundaries and order
+	filter := NewButterworthFilter(filterParams.FilterMin, filterParams.FilterMax, samplingRate, filterParams.FilterOrder)
 	filtered := filter.Apply(signal)
 
 	return &RhythmAnalysisResult{
@@ -61,6 +67,7 @@ func AnalyzeRhythm(
 }
 
 // AnalyzeMultipleRhythms analyzes multiple rhythm bands
+// For SINGLE mode with multiple rhythms, uses default parameters for each rhythm
 func AnalyzeMultipleRhythms(
 	timeData []float64,
 	ampData []float64,
@@ -70,7 +77,46 @@ func AnalyzeMultipleRhythms(
 	results := make(map[models.RhythmType]*RhythmAnalysisResult)
 
 	for _, rhythm := range rhythms {
-		result, err := AnalyzeRhythm(timeData, ampData, rhythm, samplingRate)
+		// Use default parameters for each rhythm in multi-rhythm analysis
+		result, err := AnalyzeRhythm(timeData, ampData, rhythm, samplingRate, nil)
+		if err != nil {
+			return nil, err
+		}
+		results[rhythm] = result
+	}
+
+	return results, nil
+}
+
+// AnalyzeMultipleRhythmsWithParams analyzes multiple rhythm bands with custom PSD/filter order params
+// Uses default frequency boundaries for each rhythm, but applies custom filterOrder and PSD params
+func AnalyzeMultipleRhythmsWithParams(
+	timeData []float64,
+	ampData []float64,
+	rhythms []models.RhythmType,
+	samplingRate float64,
+	filterParams *models.EEGFilterParams,
+) (map[models.RhythmType]*RhythmAnalysisResult, error) {
+	results := make(map[models.RhythmType]*RhythmAnalysisResult)
+
+	for _, rhythm := range rhythms {
+		// Get default params for this rhythm
+		params := models.GetDefaultFilterParams(rhythm)
+
+		// Override with custom filterOrder and PSD params if provided
+		if filterParams != nil {
+			if filterParams.FilterOrder > 0 {
+				params.FilterOrder = filterParams.FilterOrder
+			}
+			if filterParams.NPerSeg > 0 {
+				params.NPerSeg = filterParams.NPerSeg
+			}
+			if filterParams.NOverlap >= 0 && filterParams.NOverlap < params.NPerSeg {
+				params.NOverlap = filterParams.NOverlap
+			}
+		}
+
+		result, err := AnalyzeRhythm(timeData, ampData, rhythm, samplingRate, &params)
 		if err != nil {
 			return nil, err
 		}

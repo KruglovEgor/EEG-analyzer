@@ -10,14 +10,19 @@ type ButterworthFilter struct {
 	lowFreq  float64
 	highFreq float64
 	fs       float64
+	order    int
 }
 
-// NewButterworthFilter creates a new 1st order Butterworth bandpass filter
-func NewButterworthFilter(lowFreq, highFreq, samplingRate float64) *ButterworthFilter {
+// NewButterworthFilter creates a new Butterworth bandpass filter with specified order
+func NewButterworthFilter(lowFreq, highFreq, samplingRate float64, order int) *ButterworthFilter {
+	if order < 1 {
+		order = 1
+	}
 	return &ButterworthFilter{
 		lowFreq:  lowFreq,
 		highFreq: highFreq,
 		fs:       samplingRate,
+		order:    order,
 	}
 }
 
@@ -30,14 +35,17 @@ func (f *ButterworthFilter) Apply(signal []float64) []float64 {
 	filtered := make([]float64, len(signal))
 	copy(filtered, signal)
 
-	// Apply high-pass filter (removes DC and low frequencies)
-	if f.lowFreq > 0 {
-		filtered = f.highPass(filtered)
-	}
+	// Apply high-pass and low-pass filters sequentially, order times
+	for i := 0; i < f.order; i++ {
+		// Apply high-pass filter (removes DC and low frequencies)
+		if f.lowFreq > 0 {
+			filtered = f.highPass(filtered)
+		}
 
-	// Apply low-pass filter (removes high frequencies)
-	if f.highFreq < f.fs/2 {
-		filtered = f.lowPass(filtered)
+		// Apply low-pass filter (removes high frequencies)
+		if f.highFreq < f.fs/2 {
+			filtered = f.lowPass(filtered)
+		}
 	}
 
 	return filtered
