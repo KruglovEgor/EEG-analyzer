@@ -13,6 +13,65 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// parseFilterParams extracts filter parameters from flat form fields
+func parseFilterParams(c *gin.Context) *models.EEGFilterParams {
+	// Check if any filter param is provided
+	filterMinStr := c.PostForm("filterMin")
+	filterMaxStr := c.PostForm("filterMax")
+	filterOrderStr := c.PostForm("filterOrder")
+	nPerSegStr := c.PostForm("nPerSeg")
+	nOverlapStr := c.PostForm("nOverlap")
+
+	// If no filter params provided, return nil (will use defaults)
+	if filterMinStr == "" && filterMaxStr == "" && filterOrderStr == "" && nPerSegStr == "" && nOverlapStr == "" {
+		return nil
+	}
+
+	params := &models.EEGFilterParams{}
+	hasValidParam := false
+
+	// Parse float64 fields
+	if filterMinStr != "" {
+		if val, err := strconv.ParseFloat(filterMinStr, 64); err == nil {
+			params.FilterMin = val
+			hasValidParam = true
+		}
+	}
+	if filterMaxStr != "" {
+		if val, err := strconv.ParseFloat(filterMaxStr, 64); err == nil {
+			params.FilterMax = val
+			hasValidParam = true
+		}
+	}
+
+	// Parse int fields
+	if filterOrderStr != "" {
+		if val, err := strconv.Atoi(filterOrderStr); err == nil {
+			params.FilterOrder = val
+			hasValidParam = true
+		}
+	}
+	if nPerSegStr != "" {
+		if val, err := strconv.Atoi(nPerSegStr); err == nil {
+			params.NPerSeg = val
+			hasValidParam = true
+		}
+	}
+	if nOverlapStr != "" {
+		if val, err := strconv.Atoi(nOverlapStr); err == nil {
+			params.NOverlap = val
+			hasValidParam = true
+		}
+	}
+
+	// If no valid params were parsed, return nil
+	if !hasValidParam {
+		return nil
+	}
+
+	return params
+}
+
 // AnalyzeMultipart handles multipart/form-data requests for EEG analysis
 // This endpoint accepts direct file uploads without base64 encoding
 func AnalyzeMultipart(c *gin.Context) {
@@ -80,8 +139,11 @@ func handleSingleMultipart(c *gin.Context) {
 	// Calculate sampling rate
 	samplingRate := analysis.CalculateSamplingRate(timeData)
 
-	// Analyze multiple rhythms
-	results, err := analysis.AnalyzeMultipleRhythms(timeData, ampData, rhythms, samplingRate)
+	// Parse filter params from flat fields (only nPerSeg and nOverlap are used in SINGLE mode)
+	filterParams := parseFilterParams(c)
+
+	// Analyze multiple rhythms (filterMin/filterMax/filterOrder ignored, only nPerSeg/nOverlap used)
+	results, err := analysis.AnalyzeMultipleRhythmsWithParams(timeData, ampData, rhythms, samplingRate, filterParams)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -141,6 +203,9 @@ func handleGroupMultipart(c *gin.Context) {
 		experimentNames[i] = strings.TrimSpace(experimentNames[i])
 	}
 
+	// Parse filter params from flat fields (all parameters are used in GROUP mode)
+	filterParams := parseFilterParams(c)
+
 	// Get uploaded files
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -190,8 +255,8 @@ func handleGroupMultipart(c *gin.Context) {
 
 		samplingRate := analysis.CalculateSamplingRate(timeData)
 
-		// Analyze the specified rhythm with filter params
-		result, err := analysis.AnalyzeRhythm(timeData, ampData, rhythmType, samplingRate, nil)
+		// Analyze the specified rhythm with filter params (all parameters used in GROUP mode)
+		result, err := analysis.AnalyzeRhythm(timeData, ampData, rhythmType, samplingRate, filterParams)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Error analyzing %s: %v", fileHeader.Filename, err)})
 			return

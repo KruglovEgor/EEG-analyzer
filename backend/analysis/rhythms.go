@@ -88,8 +88,9 @@ func AnalyzeMultipleRhythms(
 	return results, nil
 }
 
-// AnalyzeMultipleRhythmsWithParams analyzes multiple rhythm bands with custom PSD/filter order params
-// Uses default frequency boundaries for each rhythm, but applies custom filterOrder and PSD params
+// AnalyzeMultipleRhythmsWithParams analyzes multiple rhythm bands with custom PSD params
+// Uses default frequency boundaries for each rhythm, but applies custom nPerSeg/nOverlap
+// filterMin, filterMax, and filterOrder from filterParams are IGNORED (each rhythm uses its own defaults)
 func AnalyzeMultipleRhythmsWithParams(
 	timeData []float64,
 	ampData []float64,
@@ -103,11 +104,9 @@ func AnalyzeMultipleRhythmsWithParams(
 		// Get default params for this rhythm
 		params := models.GetDefaultFilterParams(rhythm)
 
-		// Override with custom filterOrder and PSD params if provided
+		// Override ONLY nPerSeg and nOverlap from filterParams
+		// filterMin, filterMax, filterOrder are IGNORED (use rhythm defaults)
 		if filterParams != nil {
-			if filterParams.FilterOrder > 0 {
-				params.FilterOrder = filterParams.FilterOrder
-			}
 			if filterParams.NPerSeg > 0 {
 				params.NPerSeg = filterParams.NPerSeg
 			}

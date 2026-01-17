@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -22,7 +21,11 @@ import (
 // @Param file formData file true "CSV file"
 // @Param experimentName formData string true "Experiment name"
 // @Param rhythm formData string true "Rhythm type (ALPHA, BETA, etc.)"
-// @Param filterParams formData string false "Filter parameters as JSON string"
+// @Param filterMin formData number false "Bandpass filter min frequency (Hz)"
+// @Param filterMax formData number false "Bandpass filter max frequency (Hz)"
+// @Param filterOrder formData integer false "Filter order (1-4)"
+// @Param nPerSeg formData integer false "Welch window size"
+// @Param nOverlap formData integer false "Welch overlap size"
 // @Param timeColumn formData string false "Time column name (default: time)"
 // @Param amplitudeColumn formData string false "Amplitude column name (default: amplitude)"
 // @Success 200 {object} models.EEGPreviewResponse
@@ -42,7 +45,6 @@ func PreviewEEG(c *gin.Context) {
 	rhythmStr := c.PostForm("rhythm")
 	timeColumn := c.PostForm("timeColumn")
 	amplitudeColumn := c.PostForm("amplitudeColumn")
-	filterParamsStr := c.PostForm("filterParams")
 
 	if previewID == "" || experimentName == "" || rhythmStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Required fields: previewId, experimentName, rhythm"})
@@ -60,15 +62,8 @@ func PreviewEEG(c *gin.Context) {
 	// Parse rhythm
 	rhythm := models.RhythmType(strings.ToUpper(rhythmStr))
 
-	// Parse filter params if provided
-	var filterParams *models.EEGFilterParams
-	if filterParamsStr != "" {
-		filterParams = &models.EEGFilterParams{}
-		if err := json.Unmarshal([]byte(filterParamsStr), filterParams); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid filterParams JSON: %v", err)})
-			return
-		}
-	}
+	// Parse filter params from flat fields
+	filterParams := parseFilterParams(c)
 
 	// Get uploaded file
 	fileHeader, err := c.FormFile("file")
