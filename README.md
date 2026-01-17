@@ -210,7 +210,7 @@ The backend implements a dual-path processing pipeline:
 See [detailed signal processing documentation](../temp/SIGNAL_PROCESSING.md) for mathematical explanations.
 
 **Key Features:**
-- Configurable Butterworth filter order (1-4)
+- Configurable Butterworth filter order (any, but tested 1-4)
 - Adjustable Welch PSD parameters (nperseg, noverlap)
 - Automatic handling of short signals
 - Single-point PSD approximation for low-resolution data
