@@ -217,7 +217,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "experimentNames": {
-                    "description": "For GROUP mode - using same field names, just different data",
+                    "description": "For GROUP mode",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -290,50 +290,18 @@ const docTemplate = `{
                 "data"
             ],
             "properties": {
-                "area": {
-                    "type": "boolean"
-                },
                 "data": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.EEGCombinedDataPoint"
                     }
                 },
-                "seriesMetadata": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.EEGSeriesMetadata"
-                    }
-                },
-                "showLegend": {
-                    "type": "boolean"
-                },
-                "xAxisName": {
-                    "type": "string"
-                },
                 "xHighlightRange": {
+                    "description": "For highlighting frequency bands in PSD",
                     "type": "array",
                     "items": {
                         "type": "number"
                     }
-                },
-                "xMax": {
-                    "type": "number"
-                },
-                "xMin": {
-                    "type": "number"
-                },
-                "yAxisName": {
-                    "type": "string"
-                },
-                "yLogarithmic": {
-                    "type": "boolean"
-                },
-                "yMax": {
-                    "type": "number"
-                },
-                "yMin": {
-                    "type": "number"
                 }
             }
         },
@@ -349,23 +317,6 @@ const docTemplate = `{
                 },
                 "signalPlot": {
                     "$ref": "#/definitions/models.EEGLinePlot"
-                }
-            }
-        },
-        "models.EEGSeriesMetadata": {
-            "type": "object",
-            "required": [
-                "dataKey"
-            ],
-            "properties": {
-                "dataKey": {
-                    "type": "string"
-                },
-                "legend": {
-                    "type": "string"
-                },
-                "preferredColor": {
-                    "type": "string"
                 }
             }
         },

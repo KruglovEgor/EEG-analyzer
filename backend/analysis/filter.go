@@ -4,14 +4,15 @@ import (
 	"math"
 )
 
-// ButterworthFilter applies a simple 2nd order Butterworth bandpass filter
+// ButterworthFilter implements a simple 1st order Butterworth bandpass filter
+// This is a classic, standard implementation that provides gentle filtering
 type ButterworthFilter struct {
 	lowFreq  float64
 	highFreq float64
 	fs       float64
 }
 
-// NewButterworthFilter creates a new bandpass filter
+// NewButterworthFilter creates a new 1st order Butterworth bandpass filter
 func NewButterworthFilter(lowFreq, highFreq, samplingRate float64) *ButterworthFilter {
 	return &ButterworthFilter{
 		lowFreq:  lowFreq,
@@ -20,18 +21,21 @@ func NewButterworthFilter(lowFreq, highFreq, samplingRate float64) *ButterworthF
 	}
 }
 
-// Apply filters the signal using a simple moving average bandpass approximation
-// For production, consider using a proper IIR/FIR filter implementation
+// Apply applies the bandpass filter to the signal
 func (f *ButterworthFilter) Apply(signal []float64) []float64 {
+	if len(signal) < 2 {
+		return signal
+	}
+
 	filtered := make([]float64, len(signal))
 	copy(filtered, signal)
 
-	// High-pass filter (removes DC and very low frequencies)
+	// Apply high-pass filter (removes DC and low frequencies)
 	if f.lowFreq > 0 {
 		filtered = f.highPass(filtered)
 	}
 
-	// Low-pass filter (removes high frequencies)
+	// Apply low-pass filter (removes high frequencies)
 	if f.highFreq < f.fs/2 {
 		filtered = f.lowPass(filtered)
 	}
@@ -39,9 +43,13 @@ func (f *ButterworthFilter) Apply(signal []float64) []float64 {
 	return filtered
 }
 
+// highPass implements a 1st order high-pass Butterworth filter
 func (f *ButterworthFilter) highPass(signal []float64) []float64 {
-	// Simple first-order high-pass filter
-	alpha := 1.0 / (1.0 + f.fs/(2*math.Pi*f.lowFreq))
+	// RC coefficient for 1st order high-pass
+	RC := 1.0 / (2.0 * math.Pi * f.lowFreq)
+	dt := 1.0 / f.fs
+	alpha := RC / (RC + dt)
+
 	filtered := make([]float64, len(signal))
 	filtered[0] = signal[0]
 
@@ -52,20 +60,24 @@ func (f *ButterworthFilter) highPass(signal []float64) []float64 {
 	return filtered
 }
 
+// lowPass implements a 1st order low-pass Butterworth filter
 func (f *ButterworthFilter) lowPass(signal []float64) []float64 {
-	// Simple first-order low-pass filter
-	alpha := (2 * math.Pi * f.highFreq) / (f.fs + 2*math.Pi*f.highFreq)
+	// RC coefficient for 1st order low-pass
+	RC := 1.0 / (2.0 * math.Pi * f.highFreq)
+	dt := 1.0 / f.fs
+	alpha := dt / (RC + dt)
+
 	filtered := make([]float64, len(signal))
 	filtered[0] = signal[0]
 
 	for i := 1; i < len(signal); i++ {
-		filtered[i] = alpha*signal[i] + (1-alpha)*filtered[i-1]
+		filtered[i] = alpha*signal[i] + (1.0-alpha)*filtered[i-1]
 	}
 
 	return filtered
 }
 
-// RemoveDCOffset removes the mean from the signal
+// RemoveDCOffset removes the DC component (mean) from the signal
 func RemoveDCOffset(signal []float64) []float64 {
 	if len(signal) == 0 {
 		return signal
@@ -78,38 +90,10 @@ func RemoveDCOffset(signal []float64) []float64 {
 	}
 	mean := sum / float64(len(signal))
 
-	// Remove mean
+	// Subtract mean from each sample
 	result := make([]float64, len(signal))
 	for i, v := range signal {
 		result[i] = v - mean
-	}
-
-	return result
-}
-
-// Normalize normalizes the signal to [-1, 1] range
-func Normalize(signal []float64) []float64 {
-	if len(signal) == 0 {
-		return signal
-	}
-
-	// Find max absolute value
-	maxAbs := 0.0
-	for _, v := range signal {
-		abs := math.Abs(v)
-		if abs > maxAbs {
-			maxAbs = abs
-		}
-	}
-
-	if maxAbs == 0 {
-		return signal
-	}
-
-	// Normalize
-	result := make([]float64, len(signal))
-	for i, v := range signal {
-		result[i] = v / maxAbs
 	}
 
 	return result

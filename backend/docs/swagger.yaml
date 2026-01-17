@@ -82,7 +82,7 @@ definitions:
         description: For SINGLE mode
         type: string
       experimentNames:
-        description: For GROUP mode - using same field names, just different data
+        description: For GROUP mode
         items:
           type: string
         type: array
@@ -134,36 +134,15 @@ definitions:
     type: object
   models.EEGLinePlot:
     properties:
-      area:
-        type: boolean
       data:
         items:
           $ref: '#/definitions/models.EEGCombinedDataPoint'
         type: array
-      seriesMetadata:
-        items:
-          $ref: '#/definitions/models.EEGSeriesMetadata'
-        type: array
-      showLegend:
-        type: boolean
-      xAxisName:
-        type: string
       xHighlightRange:
+        description: For highlighting frequency bands in PSD
         items:
           type: number
         type: array
-      xMax:
-        type: number
-      xMin:
-        type: number
-      yAxisName:
-        type: string
-      yLogarithmic:
-        type: boolean
-      yMax:
-        type: number
-      yMin:
-        type: number
     required:
     - data
     type: object
@@ -176,17 +155,6 @@ definitions:
     required:
     - psdPlot
     - signalPlot
-    type: object
-  models.EEGSeriesMetadata:
-    properties:
-      dataKey:
-        type: string
-      legend:
-        type: string
-      preferredColor:
-        type: string
-    required:
-    - dataKey
     type: object
   models.RhythmType:
     enum:

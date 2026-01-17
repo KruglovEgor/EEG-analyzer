@@ -160,17 +160,11 @@ func createPlotPair(
 	targetPoints := analysis.SuggestTargetPoints(len(timeData))
 
 	// Downsample signal plot data
-	timeDownsampled, rawDownsampled := analysis.DownsampleData(
-		timeData, rawSignal, targetPoints, analysis.StrategyLTTB,
-	)
-	_, filteredDownsampled := analysis.DownsampleData(
-		timeData, result.FilteredSignal, targetPoints, analysis.StrategyLTTB,
-	)
+	timeDownsampled, rawDownsampled := analysis.DownsampleData(timeData, rawSignal, targetPoints)
+	_, filteredDownsampled := analysis.DownsampleData(timeData, result.FilteredSignal, targetPoints)
 
 	// Downsample PSD data
-	freqDownsampled, psdDownsampled := analysis.DownsampleData(
-		result.Frequencies, result.PSD, targetPoints/2, analysis.StrategyLTTB,
-	)
+	freqDownsampled, psdDownsampled := analysis.DownsampleData(result.Frequencies, result.PSD, targetPoints/2)
 
 	// Create signal plot data (combined format for Recharts)
 	signalData := make([]models.EEGCombinedDataPoint, len(timeDownsampled))
@@ -191,43 +185,17 @@ func createPlotPair(
 		}
 	}
 
-	// Create metadata
-	// Metadata fields commented out as per frontend request - frontend will add localized labels
-	// rawLegend := "Raw Signal"
-	// filteredLegend := "Filtered Signal"
-	// psdLegend := "PSD"
-	// secondaryColor := "secondary"
-	// primaryColor := "primary"
-
-	// yLogTrue := true
-	// xAxisFreq := "Frequency (Hz)"
-	// yAxisPower := "Power (µV²/Hz)"
-	// xAxisTime := "Time (s)"
-	// yAxisAmp := "Amplitude (µV)"
-
 	// Get rhythm band for highlight
 	band := models.DefaultRhythmBands[result.Rhythm]
 	xHighlight := [2]float64{band.Low, band.High}
 
 	return models.EEGPlotPair{
 		PSDPlot: models.EEGLinePlot{
-			// SeriesMetadata: []models.EEGSeriesMetadata{
-			//   {DataKey: "psd", Legend: &psdLegend, PreferredColor: &secondaryColor},
-			// },
-			Data: psdData,
-			// YLogarithmic:    &yLogTrue,
-			// XAxisName:       &xAxisFreq,
-			// YAxisName:       &yAxisPower,
+			Data:            psdData,
 			XHighlightRange: &xHighlight,
 		},
 		SignalPlot: models.EEGLinePlot{
-			// SeriesMetadata: []models.EEGSeriesMetadata{
-			//   {DataKey: "raw", Legend: &rawLegend, PreferredColor: &primaryColor},
-			//   {DataKey: "filtered", Legend: &filteredLegend, PreferredColor: &secondaryColor},
-			// },
 			Data: signalData,
-			// XAxisName: &xAxisTime,
-			// YAxisName: &yAxisAmp,
 		},
 	}
 }

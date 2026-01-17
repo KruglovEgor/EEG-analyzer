@@ -11,7 +11,6 @@ import (
 type FFTResult struct {
 	Frequencies []float64 // Frequency bins (Hz)
 	PSD         []float64 // Power Spectral Density (µV²/Hz)
-	Magnitude   []float64 // Magnitude spectrum
 }
 
 // ComputeWelchPSD computes Power Spectral Density using Welch's method
@@ -20,7 +19,7 @@ func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg int) *FFTRe
 	n := len(signal)
 	if n < nperseg {
 		// Fall back to simple FFT if signal is too short
-		return ComputeFFT(signal, samplingRate)
+		return computeSimpleFFT(signal, samplingRate)
 	}
 
 	// Welch parameters (matching scipy defaults)
@@ -34,7 +33,7 @@ func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg int) *FFTRe
 	numSegments := (n - noverlap) / step
 
 	if numSegments < 1 {
-		return ComputeFFT(signal, samplingRate)
+		return computeSimpleFFT(signal, samplingRate)
 	}
 
 	// Frequency bins
@@ -99,19 +98,16 @@ func ComputeWelchPSD(signal []float64, samplingRate float64, nperseg int) *FFTRe
 	return &FFTResult{
 		Frequencies: frequencies,
 		PSD:         psd,
-		Magnitude:   nil, // Not computed in Welch method
 	}
 }
 
-// ComputeFFT performs FFT on the signal and returns frequency domain data
-// Kept for compatibility, but ComputeWelchPSD should be preferred for PSD analysis
-func ComputeFFT(signal []float64, samplingRate float64) *FFTResult {
+// computeSimpleFFT is a fallback for short signals where Welch's method cannot be applied
+func computeSimpleFFT(signal []float64, samplingRate float64) *FFTResult {
 	n := len(signal)
 	if n < 2 {
 		return &FFTResult{
 			Frequencies: []float64{},
 			PSD:         []float64{},
-			Magnitude:   []float64{},
 		}
 	}
 
@@ -125,7 +121,6 @@ func ComputeFFT(signal []float64, samplingRate float64) *FFTResult {
 	halfN := n / 2
 	frequencies := make([]float64, halfN)
 	psd := make([]float64, halfN)
-	magnitude := make([]float64, halfN)
 
 	// Calculate frequency bins
 	freqStep := samplingRate / float64(n)
@@ -133,16 +128,13 @@ func ComputeFFT(signal []float64, samplingRate float64) *FFTResult {
 		frequencies[i] = float64(i) * freqStep
 	}
 
-	// Calculate PSD and magnitude
+	// Calculate PSD
 	for i := 0; i < halfN; i++ {
 		mag := cmplx.Abs(fftOutput[i])
-		magnitude[i] = mag
-
-		// PSD = (magnitude^2) / N
-		// Ensure PSD > 0 for logarithmic scale
+		// PSD = (magnitude^2) / N, ensure minimum value for log scale
 		psdValue := (mag * mag) / float64(n)
 		if psdValue < 1e-10 {
-			psdValue = 1e-10 // Minimum value for log scale
+			psdValue = 1e-10
 		}
 		psd[i] = psdValue
 	}
@@ -150,7 +142,6 @@ func ComputeFFT(signal []float64, samplingRate float64) *FFTResult {
 	return &FFTResult{
 		Frequencies: frequencies,
 		PSD:         psd,
-		Magnitude:   magnitude,
 	}
 }
 
@@ -219,4 +210,39 @@ func trapezoidalIntegration(x, y []float64) float64 {
 	}
 
 	return sum
+}
+
+// ApplyFFTBandpass applies FFT-based bandpass filtering (matches Python's remove_noise_fft)
+// This is used ONLY for PSD computation to match the Python implementation
+// For signal visualization, use Butterworth filter instead
+func ApplyFFTBandpass(signal []float64, samplingRate, lowFreq, highFreq float64) []float64 {
+	n := len(signal)
+	if n < 2 {
+		return signal
+	}
+
+	// Perform FFT
+	fftOutput := fft.FFTReal(signal)
+
+	// Calculate frequency step
+	freqStep := samplingRate / float64(n)
+
+	// Zero out frequencies outside the desired band
+	for i := 0; i < len(fftOutput); i++ {
+		freq := float64(i) * freqStep
+		if freq < lowFreq || freq > highFreq {
+			fftOutput[i] = complex(0, 0)
+		}
+	}
+
+	// Perform inverse FFT
+	filtered := fft.IFFT(fftOutput)
+
+	// Take only the real part and trim to original length
+	result := make([]float64, n)
+	for i := 0; i < n && i < len(filtered); i++ {
+		result[i] = real(filtered[i])
+	}
+
+	return result
 }

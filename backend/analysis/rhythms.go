@@ -15,43 +15,40 @@ type RhythmAnalysisResult struct {
 }
 
 // AnalyzeRhythm performs complete analysis for a specific rhythm band
-// Matches Python implementation from lab notebook:
-// 1. Remove DC offset
-// 2. Apply FFT pre-filter (0.5-40 Hz) to remove noise
-// 3. Compute PSD using Welch's method on the pre-filtered signal
-// 4. Extract power in the rhythm band
-// 5. Apply bandpass filter for visualization
+// Processing steps:
+// 1. Remove DC offset (mean)
+// 2. Apply FFT bandpass (0.5-40 Hz) and compute PSD (matches Python implementation)
+// 3. Extract power in the rhythm band from PSD
+// 4. Apply Butterworth 1st order bandpass filter on original signal for visualization
 func AnalyzeRhythm(
 	timeData []float64,
 	ampData []float64,
 	rhythm models.RhythmType,
 	samplingRate float64,
 ) (*RhythmAnalysisResult, error) {
-	// Get rhythm band
+	// Get rhythm frequency band
 	band, ok := models.DefaultRhythmBands[rhythm]
 	if !ok {
 		return nil, models.ErrInvalidRhythmBand
 	}
 
-	// Step 1: Remove DC offset
+	// Step 1: Remove DC offset from original signal
 	signal := RemoveDCOffset(ampData)
 
-	// Step 2: Pre-filter with FFT to remove noise (0.5-40 Hz)
-	// This matches Python: df_cleaned = clean_eeg_data(df, lower_freq=0.5, upper_freq=40, ...)
-	signalPreFiltered := PreFilterSignal(signal, samplingRate, 0.5, 40)
+	// Step 2: For PSD computation, apply FFT pre-filter (0.5-40 Hz)
+	// This matches Python implementation: clean_eeg_data() + welch()
+	signalForPSD := ApplyFFTBandpass(signal, samplingRate, 0.5, 40.0)
+	fftResult := ComputeWelchPSD(signalForPSD, samplingRate, 1024)
 
-	// Step 3: Compute PSD using Welch's method on the PRE-FILTERED signal
-	// This matches Python: calculate_lambd_power(df_cleaned['A0 с FFT (В)'].values, sampling_rate)
-	fftResult := ComputeWelchPSD(signalPreFiltered, samplingRate, 1024)
-
-	// Step 4: Calculate band power by integrating PSD in the rhythm band
+	// Step 3: Calculate band power by integrating PSD in the rhythm band
 	absolutePower := ExtractBandPower(fftResult, band.Low, band.High)
 	totalPower := CalculateTotalPower(fftResult)
 	relativePower := CalculateRelativePower(absolutePower, totalPower)
 
-	// Step 5: Apply bandpass filter for visualization (on pre-filtered signal)
+	// Step 4: For visualization, apply Butterworth filter on the ORIGINAL signal
+	// This provides cleaner visual representation without harsh FFT artifacts
 	filter := NewButterworthFilter(band.Low, band.High, samplingRate)
-	filtered := filter.Apply(signalPreFiltered)
+	filtered := filter.Apply(signal)
 
 	return &RhythmAnalysisResult{
 		Rhythm:         rhythm,

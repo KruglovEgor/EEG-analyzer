@@ -4,91 +4,14 @@ import (
 	"math"
 )
 
-// DownsampleStrategy defines the downsampling method
-type DownsampleStrategy int
-
-const (
-	// StrategyLTTB uses Largest-Triangle-Three-Buckets algorithm (best for visualization)
-	StrategyLTTB DownsampleStrategy = iota
-	// StrategyDecimate uses simple decimation (faster but less accurate)
-	StrategyDecimate
-	// StrategyAverage uses averaging within buckets
-	StrategyAverage
-)
-
-// DownsampleData reduces the number of data points while preserving shape
-func DownsampleData(x, y []float64, targetPoints int, strategy DownsampleStrategy) ([]float64, []float64) {
+// DownsampleData reduces the number of data points while preserving visual shape
+// Uses the LTTB (Largest-Triangle-Three-Buckets) algorithm for optimal visualization
+func DownsampleData(x, y []float64, targetPoints int) ([]float64, []float64) {
 	if len(x) <= targetPoints || targetPoints < 3 {
 		return x, y
 	}
 
-	switch strategy {
-	case StrategyLTTB:
-		return downsampleLTTB(x, y, targetPoints)
-	case StrategyAverage:
-		return downsampleAverage(x, y, targetPoints)
-	default:
-		return downsampleDecimate(x, y, targetPoints)
-	}
-}
-
-// downsampleDecimate performs simple decimation (every Nth point)
-func downsampleDecimate(x, y []float64, targetPoints int) ([]float64, []float64) {
-	n := len(x)
-	step := float64(n) / float64(targetPoints)
-
-	xOut := make([]float64, 0, targetPoints)
-	yOut := make([]float64, 0, targetPoints)
-
-	for i := 0; i < targetPoints; i++ {
-		idx := int(float64(i) * step)
-		if idx >= n {
-			idx = n - 1
-		}
-		xOut = append(xOut, x[idx])
-		yOut = append(yOut, y[idx])
-	}
-
-	return xOut, yOut
-}
-
-// downsampleAverage averages points within each bucket
-func downsampleAverage(x, y []float64, targetPoints int) ([]float64, []float64) {
-	n := len(x)
-	bucketSize := n / targetPoints
-
-	xOut := make([]float64, 0, targetPoints)
-	yOut := make([]float64, 0, targetPoints)
-
-	for i := 0; i < targetPoints; i++ {
-		start := i * bucketSize
-		end := start + bucketSize
-		if i == targetPoints-1 {
-			end = n
-		}
-
-		if end > n {
-			end = n
-		}
-
-		// Calculate averages
-		xSum := 0.0
-		ySum := 0.0
-		count := 0
-
-		for j := start; j < end; j++ {
-			xSum += x[j]
-			ySum += y[j]
-			count++
-		}
-
-		if count > 0 {
-			xOut = append(xOut, xSum/float64(count))
-			yOut = append(yOut, ySum/float64(count))
-		}
-	}
-
-	return xOut, yOut
+	return downsampleLTTB(x, y, targetPoints)
 }
 
 // downsampleLTTB implements Largest-Triangle-Three-Buckets algorithm
@@ -149,7 +72,7 @@ func downsampleLTTB(x, y []float64, targetPoints int) ([]float64, []float64) {
 
 		for ; rangeStart < rangeEnd; rangeStart++ {
 			// Calculate triangle area
-			area := math.Abs((pointAX-avgX)*(y[rangeStart]-pointAY) -
+			area := math.Abs((pointAX-avgX)*(y[rangeStart]-pointAY)-
 				(pointAX-x[rangeStart])*(avgY-pointAY)) * 0.5
 
 			if area > maxArea {
