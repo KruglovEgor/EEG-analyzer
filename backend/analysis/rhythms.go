@@ -104,14 +104,17 @@ func AnalyzeMultipleRhythmsWithParams(
 		// Get default params for this rhythm
 		params := models.GetDefaultFilterParams(rhythm)
 
-		// Override ONLY nPerSeg and nOverlap from filterParams
-		// filterMin, filterMax, filterOrder are IGNORED (use rhythm defaults)
+		// Override nPerSeg, nOverlap, and filterOrder from filterParams
+		// filterMin and filterMax are IGNORED (use rhythm defaults for frequency boundaries)
 		if filterParams != nil {
 			if filterParams.NPerSeg > 0 {
 				params.NPerSeg = filterParams.NPerSeg
 			}
-			if filterParams.NOverlap >= 0 && filterParams.NOverlap < params.NPerSeg {
+			if filterParams.NOverlap > 0 && filterParams.NOverlap < params.NPerSeg {
 				params.NOverlap = filterParams.NOverlap
+			}
+			if filterParams.FilterOrder > 0 {
+				params.FilterOrder = filterParams.FilterOrder
 			}
 		}
 
